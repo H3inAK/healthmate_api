@@ -7,8 +7,36 @@ const blogsRouter = express.Router();
 
 blogsRouter.get("/", async (req, res) => {
     try{
-        const blogs = await Blog.find();
-        res.send(blogs);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const skip = (page - 1) * limit;
+
+        console.log(page, limit, skip);
+
+        const query = Blog.find().skip(skip).limit(limit);
+        const blogs = await query.select('-__v');
+
+        const totalBlogs = await Blog.countDocuments();
+        const totalPages = Math.ceil(totalBlogs / limit);
+
+        if(page > totalPages){
+            return res.status(HttpStatusCodes.BAD_REQUEST).json({
+                status: 'fail',
+                message: 'Page not found'
+            });
+        }
+
+        res.status(HttpStatusCodes.OK).json({
+            status: 'success',
+            requestTime: req.requestTime,
+            results: blogs.length,
+            totalResults: totalBlogs,
+            currentPage: page,
+            totalPages: totalPages,
+            data: {
+                blogs
+            }
+        })
     } catch(err){
         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
             status: 'fail',
