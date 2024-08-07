@@ -6,20 +6,32 @@ const HttpStatusCodes = require("../utils/http_status_codes");
 const blogsRouter = express.Router();
 
 blogsRouter.get("/", async (req, res) => {
-    try{
+    try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
         const skip = (page - 1) * limit;
 
-        console.log(page, limit, skip);
+        const searchTerm = req.query.searchTerm;
+        let searchRegex = null;
 
-        const query = Blog.find().skip(skip).limit(limit);
+        let query = Blog.find();
+
+        if (searchTerm) {
+            searchRegex = new RegExp(searchTerm, 'i'); 
+            query = query.or([{ title: searchRegex }, { content: searchRegex }]);
+        }
+
+        query = query.skip(skip).limit(limit);
+
         const blogs = await query.select('-__v');
 
-        const totalBlogs = await Blog.countDocuments();
+        const totalBlogs = await Blog.countDocuments(searchTerm ? {
+            $or: [{ title: searchRegex }, { content: searchRegex }]
+        } : {});
+
         const totalPages = Math.ceil(totalBlogs / limit);
 
-        if(page > totalPages){
+        if (page > totalPages) {
             return res.status(HttpStatusCodes.BAD_REQUEST).json({
                 status: 'fail',
                 message: 'Page not found'
@@ -36,14 +48,99 @@ blogsRouter.get("/", async (req, res) => {
             data: {
                 blogs
             }
-        })
-    } catch(err){
+        });
+    } catch (err) {
         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
             status: 'fail',
             message: err.message
         });
     }
 });
+
+// blogsRouter.get("/", async (req, res) => {
+//     try {
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 5;
+//         const skip = (page - 1) * limit;
+
+//         const category = req.query.category;
+
+//         let query = Blog.find();
+
+//         if (category) {
+//             query = query.where('categories').in([category]);
+//         }
+
+//         query = query.skip(skip).limit(limit);
+
+//         const blogs = await query.select('-__v');
+
+//         const totalBlogs = await Blog.countDocuments(category ? { categories: { $in: [category] } } : {});
+//         const totalPages = Math.ceil(totalBlogs / limit);
+
+//         if (page > totalPages) {
+//             return res.status(HttpStatusCodes.BAD_REQUEST).json({
+//                 status: 'fail',
+//                 message: 'Page not found'
+//             });
+//         }
+
+//         res.status(HttpStatusCodes.OK).json({
+//             status: 'success',
+//             requestTime: req.requestTime,
+//             results: blogs.length,
+//             totalResults: totalBlogs,
+//             currentPage: page,
+//             totalPages: totalPages,
+//             data: {
+//                 blogs
+//             }
+//         });
+//     } catch (err) {
+//         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
+//             status: 'fail',
+//             message: err.message
+//         });
+//     }
+// });
+
+// blogsRouter.get("/", async (req, res) => {
+//     try{
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 5;
+//         const skip = (page - 1) * limit;
+
+//         const query = Blog.find().skip(skip).limit(limit);
+//         const blogs = await query.select('-__v');
+
+//         const totalBlogs = await Blog.countDocuments();
+//         const totalPages = Math.ceil(totalBlogs / limit);
+
+//         if(page > totalPages){
+//             return res.status(HttpStatusCodes.BAD_REQUEST).json({
+//                 status: 'fail',
+//                 message: 'Page not found'
+//             });
+//         }
+
+//         res.status(HttpStatusCodes.OK).json({
+//             status: 'success',
+//             requestTime: req.requestTime,
+//             results: blogs.length,
+//             totalResults: totalBlogs,
+//             currentPage: page,
+//             totalPages: totalPages,
+//             data: {
+//                 blogs
+//             }
+//         })
+//     } catch(err){
+//         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
+//             status: 'fail',
+//             message: err.message
+//         });
+//     }
+// });
 
 blogsRouter.get('/:id', getBlog, (req, res) => {
     res.json({
@@ -55,7 +152,7 @@ blogsRouter.get('/:id', getBlog, (req, res) => {
 blogsRouter.post("/", async (req, res) => {
     const blog = new Blog({
         photoUrl: req.body.photoUrl,
-        category: req.body.category,
+        categories: req.body.categories,
         title: req.body.title,
         content: req.body.content
     });
@@ -73,6 +170,28 @@ blogsRouter.post("/", async (req, res) => {
         });
     }
 });
+
+// blogsRouter.post("/", async (req, res) => {
+//     const blog = new Blog({
+//         photoUrl: req.body.photoUrl,
+//         category: req.body.category,
+//         title: req.body.title,
+//         content: req.body.content
+//     });
+
+//     try {
+//         const newBlog = await blog.save();
+//         res.status(HttpStatusCodes.CREATED).json({
+//             status: 'success',
+//             data: newBlog
+//         });
+//     } catch (err) {
+//         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
+//             status: 'fail',
+//             message: err.message
+//         });
+//     }
+// });
 
 async function getBlog(req, res, next) {
     let blog;
