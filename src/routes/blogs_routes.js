@@ -8,7 +8,7 @@ const blogsRouter = express.Router();
 blogsRouter.get("/", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 5;
+        const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
         const category = req.query.category;
@@ -61,61 +61,6 @@ blogsRouter.get("/", async (req, res) => {
     }
 });
 
-// blogsRouter.get("/", async (req, res) => {
-//     try {
-//         const page = parseInt(req.query.page) || 1;
-//         const limit = parseInt(req.query.limit) || 5;
-//         const skip = (page - 1) * limit;
-
-//         const category = req.query.category;
-//         const searchTerm = req.query.searchTerm;
-//         let searchRegex = null;
-
-//         let query = Blog.find();
-
-//         if (category) {
-//             query = query.where('categories').in([category]);
-//             console.log('inside category');
-//         }
-
-//         if (searchTerm) {
-//             searchRegex = new RegExp(searchTerm, 'i'); 
-//             query = query.or([{ title: searchRegex }, { content: searchRegex }]);
-//             console.log('inside search');
-//         }
-
-//         query = query.skip(skip).limit(limit);
-//         const blogs = await query.select('-__v');
-//         totalBlogs = await Blog.countDocuments(category ? { categories: { $in: [category] } } : {}) ;
-//         // totalBlogs = await Blog.countDocuments(searchTerm ? { $or: [{ title: searchRegex }, { content: searchRegex }] } : {});
-//         const totalPages = Math.ceil(totalBlogs / limit);
-
-//         if (page > totalPages) {
-//             return res.status(HttpStatusCodes.BAD_REQUEST).json({
-//                 status: 'fail',
-//                 message: 'Page not found'
-//             });
-//         }
-
-//         res.status(HttpStatusCodes.OK).json({
-//             status: 'success',
-//             requestTime: req.requestTime,
-//             results: blogs.length,
-//             totalResults: totalBlogs,
-//             currentPage: page,
-//             totalPages: totalPages,
-//             data: {
-//                 blogs
-//             }
-//         });
-//     } catch (err) {
-//         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
-//             status: 'fail',
-//             message: err.message
-//         });
-//     }
-// });
-
 blogsRouter.get('/:id', getBlog, (req, res) => {
     res.json({
         status: 'success',
@@ -136,6 +81,55 @@ blogsRouter.post("/", async (req, res) => {
         res.status(HttpStatusCodes.CREATED).json({
             status: 'success',
             data: newBlog
+        });
+    } catch (err) {
+        res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
+            status: 'fail',
+            message: err.message
+        });
+    }
+});
+
+blogsRouter.put('/:id', getBlog, async (req, res) => {
+    if (req.body.photoUrl != null) {
+        res.blog.photoUrl = req.body.photoUrl;
+    }
+    if (req.body.categories != null) {
+        res.blog.categories = req.body.categories;
+    }
+    if (req.body.title != null) {
+        res.blog.title = req.body.title;
+    }
+    if (req.body.content != null) {
+        res.blog.content = req.body.content;
+    }
+
+    try {
+        const updatedBlog = await res.blog.save();
+        res.status(HttpStatusCodes.OK).json({
+            status: 'success',
+            data: updatedBlog
+        });
+    } catch (err) {
+        res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
+            status: 'fail',
+            message: err.message
+        });
+    }
+});
+
+blogsRouter.delete('/:id', async (req, res) => {
+    try {
+        const blog = await Blog.findByIdAndDelete(req.params.id);
+        if (!blog) {
+            return res.status(HttpStatusCodes.NOT_FOUND).json({
+                status: 'fail',
+                message: 'Cannot find blog'
+            });
+        }
+        res.status(HttpStatusCodes.NO_CONTENT).json({
+            status: 'success',
+            message: 'Blog deleted successfully'
         });
     } catch (err) {
         res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
