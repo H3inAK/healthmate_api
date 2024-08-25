@@ -63,6 +63,24 @@ blogsRouter.get("/", async (req, res) => {
     }
 });
 
+blogsRouter.get('/categories', async (req, res) => {
+    try {
+        const categories = await Blog.distinct('categories');
+
+        res.status(HttpStatusCodes.OK).json({
+            status: 'success',
+            data: {
+                categories
+            }
+        });
+    } catch (err) {
+        res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
+            status: 'fail',
+            message: err.message
+        });
+    }
+});
+
 blogsRouter.get('/:id', getBlog, (req, res) => {
     res.json({
         status: 'success',
