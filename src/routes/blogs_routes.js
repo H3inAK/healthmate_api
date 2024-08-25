@@ -18,14 +18,15 @@ blogsRouter.get("/", async (req, res) => {
         let filter = {};
 
         if (category) {
-            filter.categories = { $regex: new RegExp(category, 'i') }; // Case-insensitive category filter
-        }
-        if (searchTerm) {
-            searchRegex = new RegExp(searchTerm, 'i'); // 'i' makes it case-insensitive
-            filter.$or = [{ title: searchRegex }, { content: searchRegex }];
+            filter.categories = { $regex: new RegExp(category, 'i') };
+            console.log(filter);
         }
 
-        console.log('Filter:', filter); // Log the filter to see what is being queried
+        if (searchTerm) {
+            searchRegex = new RegExp(searchTerm, 'i');
+            filter.$or = [{ title: searchRegex }, { content: searchRegex }];
+            console.log(filter);       
+        }
 
         const totalBlogs = await Blog.countDocuments(filter);
         const totalPages = Math.ceil(totalBlogs / limit);
@@ -40,6 +41,7 @@ blogsRouter.get("/", async (req, res) => {
         const blogs = await Blog.find(filter)
             .skip(skip)
             .limit(limit)
+            .sort({ createdAt: -1 })
             .select('-__v');
 
         res.status(HttpStatusCodes.OK).json({

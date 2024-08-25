@@ -1,15 +1,16 @@
+require('dotenv').config({ path: '.env' });
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const morgan = require('morgan');
-const dotenv = require('dotenv');
-dotenv.config({ path: '.env' });
 
-const blogsRouter = require("./routes/blogs_routes");
-const aiChatBotRouter = require("./routes/ai_chat_bot_route");
 const AppError = require("./utils/app_error");
 const HttpStatusCodes = require("./utils/http_status_codes");
 const globalErrorHandler = require("./utils/global_error_handler");  
+const blogsRouter = require("./routes/blogs_routes");
+const aiChatBotRouter = require("./routes/ai_chat_bot_route");
+const habitsRouter = require("./routes/habits_route");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use('/api/v1/blogs', blogsRouter);
 app.use('/api/v1/healthmateai', aiChatBotRouter);
+app.use("/api/v1/goodhabits", habitsRouter);
 
 app.all('*', (req, res, next) => {
     const err = new AppError(`Can't find ${req.originalUrl} on this server!`, HttpStatusCodes.NOT_FOUND);
