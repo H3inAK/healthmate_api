@@ -11,13 +11,13 @@ async function aiChat(userInput) {
     try {
         const chatCompletion = await openai.chat.completions.create(
             {
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o-mini',
                 messages: [
-                    { role: 'system', content: 'You are a helpful health mate AI assistant. You can only answer to health and habit related questions' },
+                    { role: 'system', content: 'You are a helpful health mate AI assistant. You can only answer to health and habit related questions. You can answer burmese or english.' },
                     { role: 'user', content: userInput }
                 ],
                 temperature: 1,
-                max_tokens: 150,
+                max_tokens: 200,
                 top_p: 1,
                 frequency_penalty: 0,
                 presence_penalty: 0,
